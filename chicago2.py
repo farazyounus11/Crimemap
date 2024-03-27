@@ -6,7 +6,7 @@ import pydeck as pdk
 
 st.title("NYC/Chicago Crime Visualization")
 st.header('By Faraz Younus | M.S. Stats & Data Science', divider='gray')
-st.markdown("### Open the sidebar to select city!")
+st.markdown("### Open the left sidebar to select city!")
 
 def load_dataframe(file_path, city):
     df = pd.read_csv(file_path)
