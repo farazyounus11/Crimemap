@@ -43,14 +43,22 @@ for city in selected_cities:
 
     # Handling the crime types and descriptions more efficiently
     crime_types = df['Primary Type'].unique()
-    if 'selected_crime_types' not in st.session_state or not st.session_state.selected_crime_types:
-        st.session_state.selected_crime_types = crime_types
 
+    # Initialize selected_crime_types in session state if not already set
+    if 'selected_crime_types' not in st.session_state:
+        st.session_state.selected_crime_types = []
+
+    # Allow user to select crime types via a sidebar multiselect
+    # Start with no crime types selected
     selected_crime_types = st.sidebar.multiselect(
         "Select crime types",
         options=crime_types,
-        default=st.session_state.none
+        default=st.session_state.selected_crime_types
     )
+
+    # Update the session state after selection
+    st.session_state.selected_crime_types = selected_crime_types
+
 
     # Filter descriptions based on selected crime types
     descriptions = df[df['Primary Type'].isin(selected_crime_types)]['Description']. unique()
