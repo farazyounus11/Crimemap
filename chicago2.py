@@ -24,12 +24,13 @@ for city in selected_cities:
     df = dataframes[city]
     latvalue, lonvalue = (41.81184357, -87.60681861) if city == "Chicago Crime" else (40.7569, -73.8757)
     
-    # Ensure that min_date and max_date are datetime objects
-    min_date = pd.to_datetime(df['Date'].min())
-    max_date = pd.to_datetime(df['Date'].max())
+    # Ensure that min_date and max_date are datetime objects and convert to standard Python datetime
+    min_date = pd.to_datetime(df['Date'].min()).to_pydatetime()
+    max_date = pd.to_datetime(df['Date'].max()).to_pydatetime()
     st.write(f"Min Date Type: {type(min_date)}, Max Date Type: {type(max_date)}")  # Debug statement
 
     try:
+        # Convert the timestamps to Python datetime objects directly for the slider
         selected_start_date, selected_end_date = st.sidebar.slider(
             "Select date range",
             min_value=min_date,
@@ -52,7 +53,7 @@ for city in selected_cities:
     )
 
     # Filter descriptions based on selected crime types
-    descriptions = df[df['Primary Type'].isin(selected_crime_types)]['Description'].unique()
+    descriptions = df[df['Primary Type'].isin(selected_crime_types)]['Description']. unique()
     selected_descriptions = st.sidebar.multiselect(
         "Select descriptions",
         options=descriptions,
