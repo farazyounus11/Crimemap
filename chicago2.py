@@ -49,7 +49,7 @@ for city in selected_cities:
     selected_crime_types = st.sidebar.multiselect(
         "Select crime types",
         options=crime_types,
-        default=st.session_state.selected_crime_types
+        default=st.session_state.none
     )
 
     # Filter descriptions based on selected crime types
