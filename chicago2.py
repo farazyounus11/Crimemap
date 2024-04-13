@@ -8,12 +8,10 @@ st.title("NYC/Chicago Crime Visualization")
 st.header('By Faraz Younus | M.S. Stats & Data Science', divider='gray')
 st.markdown("### Open the upper left corner sidebar to select city!")
 
-
 @st.cache
 def load_dataframe(file_path):
-    # Load the data and preprocess it once
     df = pd.read_csv(file_path)
-    df['Date'] = pd.to_datetime(df['Date'])  # Convert the date once
+    df['Date'] = pd.to_datetime(df['Date'])
     return df
 
 dataframe_paths = {
@@ -21,9 +19,7 @@ dataframe_paths = {
     "NYC Crime": "nyccrime.csv"
 }
 
-# Load data once
 dataframes = {city: load_dataframe(path) for city, path in dataframe_paths.items()}
-
 selected_cities = st.sidebar.multiselect("Select one City for Map", list(dataframe_paths.keys()))
 
 for city in selected_cities:
@@ -31,14 +27,16 @@ for city in selected_cities:
     latvalue, lonvalue = (41.81184357, -87.60681861) if city == "Chicago Crime" else (40.7569, -73.8757)
     
     min_date, max_date = df['Date'].min(), df['Date'].max()
+    st.write(f"Min Date Type: {type(min_date)}, Max Date Type: {type(max_date)}")  # Debug statement
 
-    # Use date range directly
+    # Ensure min_date and max_date are datetime objects
     selected_start_date, selected_end_date = st.sidebar.slider(
         "Select date range",
-        min_value=min_date,
-        max_value=max_date,
-        value=(min_date, max_date)
+        min_value=pd.to_datetime(min_date),
+        max_value=pd.to_datetime(max_date),
+        value=(pd.to_datetime(min_date), pd.to_datetime(max_date))
     )
+    
 
     # Handling the crime types and descriptions more efficiently
     if 'selected_crime_types' not in st.session_state:
