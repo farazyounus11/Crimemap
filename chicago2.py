@@ -57,14 +57,26 @@ for city in selected_cities:
     except Exception as e:
         st.error(f"Error with date slider: {str(e)}")
         continue
+# Crime type selection handling
+crime_types = df['Primary Type'].unique()
+selected_crime_types = st.sidebar.multiselect("Select crime types", options=crime_types, default=[])
 
-    # Crime type selection handling
-    crime_types = df['Primary Type'].unique()
-    selected_crime_types = st.sidebar.multiselect("Select crime types", options=crime_types, default=[])
-
-    # Description selection based on selected crime types
+# Description selection based on selected crime types
+if selected_crime_types:  # Check if there are any selected crime types
     descriptions = df[df['Primary Type'].isin(selected_crime_types)]['Description'].unique()
-    selected_descriptions = st.sidebar.multiselect("Select descriptions", options=descriptions, default=[])
+    selected_descriptions = st.sidebar.multiselect(
+        "Select descriptions", 
+        options=descriptions, 
+        default=descriptions  # Default to all descriptions if crime types are selected
+    )
+else:
+    descriptions = []
+    selected_descriptions = st.sidebar.multiselect(
+        "Select descriptions", 
+        options=descriptions, 
+        default=descriptions,
+        disabled=True  # Disable selection if no crime types are selected
+    )
 
     # Applying filters to the dataframe based on user selections
     filtered_df = df[
