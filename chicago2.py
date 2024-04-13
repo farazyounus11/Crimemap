@@ -8,14 +8,13 @@ st.title("NYC/Chicago Crime Visualization")
 st.header('By Faraz Younus | M.S. Stats & Data Science', divider='gray')
 st.markdown("### Open the upper left corner sidebar to select city!")
 
+@st.cache
 def load_dataframe(file_path, city):
     df = pd.read_csv(file_path)
     if city == "Chicago Crime":
-        # Assign latitude and longitude values for Chicago
         latvalue = 41.81184357
         lonvalue = -87.60681861
     else:  # Assuming the other city is NYC Crime
-        # Assign latitude and longitude values for NYC
         latvalue = 40.7569
         lonvalue = -73.8757
     return df, latvalue, lonvalue
