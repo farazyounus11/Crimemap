@@ -3,9 +3,7 @@ import pandas as pd
 import numpy as np
 import pydeck as pdk
 
-
 st.title("NYC/Chicago Crime Visualization")
-st.header('By Faraz Younus | M.S. Stats & Data Science', divider='gray')
 st.markdown("### Open the upper left corner sidebar to select city!")
 
 @st.cache
@@ -26,36 +24,42 @@ for city in selected_cities:
     df = dataframes[city]
     latvalue, lonvalue = (41.81184357, -87.60681861) if city == "Chicago Crime" else (40.7569, -73.8757)
     
-    min_date, max_date = df['Date'].min(), df['Date'].max()
+    # Ensure that min_date and max_date are datetime objects
+    min_date = pd.to_datetime(df['Date'].min())
+    max_date = pd.to_datetime(df['Date'].max())
     st.write(f"Min Date Type: {type(min_date)}, Max Date Type: {type(max_date)}")  # Debug statement
 
-    # Ensure min_date and max_date are datetime objects
-    selected_start_date, selected_end_date = st.sidebar.slider(
-        "Select date range",
-        min_value=pd.to_datetime(min_date),
-        max_value=pd.to_datetime(max_date),
-        value=(pd.to_datetime(min_date), pd.to_datetime(max_date))
-    )
-    
+    try:
+        selected_start_date, selected_end_date = st.sidebar.slider(
+            "Select date range",
+            min_value=min_date,
+            max_value=max_date,
+            value=(min_date, max_date)
+        )
+    except Exception as e:
+        st.error(f"Error with slider: {e}")
+        continue  # Skip the rest of the loop on error to prevent further issues
 
     # Handling the crime types and descriptions more efficiently
-    if 'selected_crime_types' not in st.session_state:
-        st.session_state.selected_crime_types = df['Primary Type'].unique()
+    crime_types = df['Primary Type'].unique()
+    if 'selected_crime_types' not in st.session_state or not st.session_state.selected_crime_types:
+        st.session_state.selected_crime_types = crime_types
 
     selected_crime_types = st.sidebar.multiselect(
         "Select crime types",
-        df['Primary Type'].unique(),
+        options=crime_types,
         default=st.session_state.selected_crime_types
     )
 
+    # Filter descriptions based on selected crime types
     descriptions = df[df['Primary Type'].isin(selected_crime_types)]['Description'].unique()
     selected_descriptions = st.sidebar.multiselect(
         "Select descriptions",
-        descriptions,
+        options=descriptions,
         default=descriptions
     )
 
-    # Filtering data efficiently
+    # Apply filters to dataframe based on user selections
     filtered_df = df[
         (df['Date'] >= selected_start_date) & 
         (df['Date'] <= selected_end_date) &
@@ -63,23 +67,20 @@ for city in selected_cities:
         (df['Description'].isin(selected_descriptions))
     ]
 
-    
+    # Display the filtered DataFrame
     st.write(filtered_df)
 
-
-
+    # Display stats
     st.header('Stats')
     number_of_crimes = len(filtered_df)
     st.metric(label="Number of Arrests", value=number_of_crimes)
 
-
-
+    # Line Chart displaying crimes over time
     st.header('Line Chart', divider='gray')
     crime_counts_by_date = filtered_df.groupby(['Date', 'Primary Type']).size().unstack(fill_value=0)
     st.line_chart(crime_counts_by_date)
 
-
-
+    # Map Visualization using PyDeck
     st.header('Map', divider='gray')
     st.pydeck_chart(pdk.Deck(
         map_style=None,
@@ -109,5 +110,3 @@ for city in selected_cities:
             ),
         ],
     ))
-
-
