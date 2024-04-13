@@ -8,48 +8,46 @@ st.title("NYC/Chicago Crime Visualization")
 st.header('By Faraz Younus | M.S. Stats & Data Science', divider='gray')
 st.markdown("### Open the upper left corner sidebar to select city!")
 
+
 @st.cache
-def load_dataframe(file_path, city):
+def load_dataframe(file_path):
+    # Load the data and preprocess it once
     df = pd.read_csv(file_path)
-    if city == "Chicago Crime":
-        latvalue = 41.81184357
-        lonvalue = -87.60681861
-    else:  # Assuming the other city is NYC Crime
-        latvalue = 40.7569
-        lonvalue = -73.8757
-    return df, latvalue, lonvalue
+    df['Date'] = pd.to_datetime(df['Date'])  # Convert the date once
+    return df
 
 dataframe_paths = {
     "Chicago Crime": "chicago.csv",
     "NYC Crime": "nyccrime.csv"
 }
 
-selected_dataframes = st.sidebar.multiselect("Select one City for Map", list(dataframe_paths.keys()))
-for city in selected_dataframes:
-    st.write(f"Showing: {city}")
-    df, latvalue, lonvalue = load_dataframe(dataframe_paths[city], city)
+# Load data once
+dataframes = {city: load_dataframe(path) for city, path in dataframe_paths.items()}
+
+selected_cities = st.sidebar.multiselect("Select one City for Map", list(dataframe_paths.keys()))
+
+for city in selected_cities:
+    df = dataframes[city]
+    latvalue, lonvalue = (41.81184357, -87.60681861) if city == "Chicago Crime" else (40.7569, -73.8757)
     
+    min_date, max_date = df['Date'].min(), df['Date'].max()
 
-    df['Date'] = pd.to_datetime(df['Date'])
-    min_date = df['Date'].min().to_pydatetime()
-    max_date = df['Date'].max().to_pydatetime()
-
-
-    default_start_date = min_date
-    default_end_date = max_date
-
+    # Use date range directly
     selected_start_date, selected_end_date = st.sidebar.slider(
         "Select date range",
         min_value=min_date,
         max_value=max_date,
-        value=(default_start_date, default_end_date)
+        value=(min_date, max_date)
     )
 
-    crime_types = df['Primary Type'].unique()
+    # Handling the crime types and descriptions more efficiently
+    if 'selected_crime_types' not in st.session_state:
+        st.session_state.selected_crime_types = df['Primary Type'].unique()
+
     selected_crime_types = st.sidebar.multiselect(
         "Select crime types",
-        crime_types,
-        default=None
+        df['Primary Type'].unique(),
+        default=st.session_state.selected_crime_types
     )
 
     descriptions = df[df['Primary Type'].isin(selected_crime_types)]['Description'].unique()
@@ -59,15 +57,15 @@ for city in selected_dataframes:
         default=descriptions
     )
 
-    st.sidebar.write("Selected start date:", selected_start_date)
-    st.sidebar.write("Selected end date:", selected_end_date)
-
+    # Filtering data efficiently
     filtered_df = df[
-        (df['Date'] >= pd.to_datetime(selected_start_date)) & 
-        (df['Date'] <= pd.to_datetime(selected_end_date)) &
+        (df['Date'] >= selected_start_date) & 
+        (df['Date'] <= selected_end_date) &
         (df['Primary Type'].isin(selected_crime_types)) &
         (df['Description'].isin(selected_descriptions))
     ]
+
+    
     st.write(filtered_df)
 
 
