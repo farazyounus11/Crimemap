@@ -7,7 +7,6 @@ import pydeck as pdk
 st.title("NYC/Chicago Crime Visualization")
 st.markdown("### Open the upper left corner sidebar to select city!")
 
-# Function to load data with caching and error handling
 @st.cache(allow_output_mutation=True)
 def load_dataframe(file_path):
     try:
@@ -18,33 +17,26 @@ def load_dataframe(file_path):
         st.error(f"Failed to load data: {str(e)}")
         return pd.DataFrame()  # Return an empty DataFrame on failure
 
-# Dictionary to map city names to file paths
 dataframe_paths = {
     "Chicago Crime": "chicago.csv",
     "NYC Crime": "nyccrime.csv"
 }
 
-# Lazy loading of dataframes
 @st.cache(allow_output_mutation=True)
 def get_dataframes():
     return {city: load_dataframe(path) for city, path in dataframe_paths.items()}
 
-# Load dataframes
 dataframes = get_dataframes()
-
-# Sidebar selection for cities
 selected_cities = st.sidebar.multiselect("Select one City for Map", list(dataframe_paths.keys()))
 
-# Main logic to process each selected city
 for city in selected_cities:
     df = dataframes[city]
     if df.empty:
-        continue  # Skip processing if the dataframe is empty
+        st.error("Selected city data is not available or the file is empty.")
+        continue
 
-    # Setting latitude and longitude based on city
     latvalue, lonvalue = (41.81184357, -87.60681861) if city == "Chicago Crime" else (40.7569, -73.8757)
 
-    # Handling date range selection
     try:
         min_date = df['Date'].min().to_pydatetime()
         max_date = df['Date'].max().to_pydatetime()
@@ -57,73 +49,60 @@ for city in selected_cities:
     except Exception as e:
         st.error(f"Error with date slider: {str(e)}")
         continue
-# Crime type selection handling
-crime_types = df['Primary Type'].unique()
-selected_crime_types = st.sidebar.multiselect("Select crime types", options=crime_types, default=[])
 
-# Description selection based on selected crime types
-if selected_crime_types:  # Check if there are any selected crime types
-    descriptions = df[df['Primary Type'].isin(selected_crime_types)]['Description'].unique()
-    selected_descriptions = st.sidebar.multiselect(
-        "Select descriptions", 
-        options=descriptions, 
-        default=descriptions  # Default to all descriptions if crime types are selected
-    )
-else:
-    descriptions = []
-    selected_descriptions = st.sidebar.multiselect(
-        "Select descriptions", 
-        options=descriptions, 
-        default=descriptions,
-        disabled=True  # Disable selection if no crime types are selected
-    )
+    crime_types = df['Primary Type'].unique()
+    selected_crime_types = st.sidebar.multiselect("Select crime types", options=crime_types, default=[])
 
-    # Applying filters to the dataframe based on user selections
+    if selected_crime_types:
+        descriptions = df[df['Primary Type'].isin(selected_crime_types)]['Description'].unique()
+        selected_descriptions = st.sidebar.multiselect("Select descriptions", options=descriptions, default=descriptions)
+    else:
+        descriptions = []
+        selected_descriptions = []
+        st.sidebar.multiselect("Select descriptions", options=descriptions, disabled=True)
+
     filtered_df = df[
         (df['Date'] >= selected_start_date) & 
         (df['Date'] <= selected_end_date) &
         (df['Primary Type'].isin(selected_crime_types)) &
         (df['Description'].isin(selected_descriptions))
     ]
-st.write(filtered_df)
 
-if filtered_df.empty:
-    st.warning("No data available for the selected criteria. Please adjust your selections.")
-else:
-    # Display statistics and line chart
-    st.header('Stats')
-    st.metric(label="Number of Arrests", value=len(filtered_df))
-    st.header('Line Chart', divider='gray')
-    crime_counts_by_date = filtered_df.groupby(['Date', 'Primary Type']).size().unstack(fill_value=0)
-    st.line_chart(crime_counts_by_date)
+    if not filtered_df.empty:
+        st.write(filtered_df)
+        st.header('Stats')
+        st.metric(label="Number of Arrests", value=len(filtered_df))
+        crime_counts_by_date = filtered_df.groupby(['Date', 'Primary Type']).size().unstack(fill_value=0)
+        st.line_chart(crime_counts_by_date)
 
-    # Map visualization with PyDeck
-    st.header('Map', divider='gray')
-    st.pydeck_chart(pdk.Deck(
-        map_style=None,
-        initial_view_state=pdk.ViewState(
-            latitude=latvalue,
-            longitude=lonvalue,
-            zoom=11,
-            pitch=50,
-        ),
-        layers=[
-            pdk.Layer(
-                'HexagonLayer',
-                data=filtered_df,
-                get_position=["lon", "lat"],  # Ensure these names match your DataFrame's column names
-                radius=100,
-                elevation_scale=3,
-                elevation_range=[0, 1000],
-                pickable=True,
-                extruded=True,
+        st.header('Map', divider='gray')
+        st.pydeck_chart(pdk.Deck(
+            map_style=None,
+            initial_view_state=pdk.ViewState(
+                latitude=latvalue,
+                longitude=lonvalue,
+                zoom=11,
+                pitch=50,
             ),
-            pdk.Layer(
-                'ScatterplotLayer',
-                data=filtered_df,
-                get_position=["lon", "lat"],  # Ensure these names match your DataFrame's column names
-                get_color=[200, 30, 0, 160],
-                get_radius=100,
-            ),
-        ],
-    ))
+            layers=[
+                pdk.Layer(
+                    'HexagonLayer',
+                    data=filtered_df,
+                    get_position='[lon, lat]',
+                    radius=100,
+                    elevation_scale=4,
+                    elevation_range=[0, 1000],
+                    pickable=True,
+                    extruded=True,
+                ),
+                pdk.Layer(
+                    'ScatterplotLayer',
+                    data=filtered_df,
+                    get_position='[lon, lat]',
+                    get_color=[200, 30, 0, 160],
+                    get_radius=100,
+                ),
+            ],
+        ))
+    else:
+        st.warning("No data available for the selected criteria
