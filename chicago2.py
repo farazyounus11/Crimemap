@@ -67,42 +67,44 @@ for city in selected_cities:
         (df['Primary Type'].isin(selected_crime_types)) &
         (df['Description'].isin(selected_descriptions))
     ]
+if not filtered_df.empty:
+    st.write(filtered_df)
+    st.header('Stats')
+    st.metric(label="Number of Arrests", value=len(filtered_df))
+    crime_counts_by_date = filtered_df.groupby(['Date', 'Primary Type']).size().unstack(fill_value=0)
+    st.line_chart(crime_counts_by_date)
 
-    if not filtered_df.empty:
-        st.write(filtered_df)
-        st.header('Stats')
-        st.metric(label="Number of Arrests", value=len(filtered_df))
-        crime_counts_by_date = filtered_df.groupby(['Date', 'Primary Type']).size().unstack(fill_value=0)
-        st.line_chart(crime_counts_by_date)
-
-        st.header('Map', divider='gray')
-        st.pydeck_chart(pdk.Deck(
-            map_style=None,
-            initial_view_state=pdk.ViewState(
-                latitude=latvalue,
-                longitude=lonvalue,
-                zoom=11,
-                pitch=50,
+    st.header('Map', divider='gray')
+    st.pydeck_chart(pdk.Deck(
+        map_style=None,
+        initial_view_state=pdk.ViewState(
+            latitude=latvalue,
+            longitude=lonvalue,
+            zoom=11,
+            pitch=50,
+        ),
+        layers=[
+            pdk.Layer(
+                'HexagonLayer',
+                data=filtered_df,
+                get_position='[lon, lat]',
+                radius=100,
+                elevation_scale=4,
+                elevation_range=[0, 1000],
+                pickable=True,
+                extruded=True,
             ),
-            layers=[
-                pdk.Layer(
-                    'HexagonLayer',
-                    data=filtered_df,
-                    get_position='[lon, lat]',
-                    radius=100,
-                    elevation_scale=4,
-                    elevation_range=[0, 1000],
-                    pickable=True,
-                    extruded=True,
-                ),
-                pdk.Layer(
-                    'ScatterplotLayer',
-                    data=filtered_df,
-                    get_position='[lon, lat]',
-                    get_color=[200, 30, 0, 160],
-                    get_radius=100,
-                ),
-            ],
-        ))
+            pdk.Layer(
+                'ScatterplotLayer',
+                data=filtered_df,
+                get_position='[lon, lat]',
+                get_color=[200, 30, 0, 160],
+                get_radius=100,
+            ),
+        ],
+    ))
+else:
+    st.warning("No data available for the selected criteria.")
+
     else:
         st.warning("No data available for the selected criteria
