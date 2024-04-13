@@ -73,10 +73,11 @@ for city in selected_cities:
         (df['Primary Type'].isin(selected_crime_types)) &
         (df['Description'].isin(selected_descriptions))
     ]
+st.write(filtered_df)
 
-    # Display the filtered DataFrame
-    st.write(filtered_df)
-
+if filtered_df.empty:
+    st.warning("No data available for the selected criteria. Please adjust your selections.")
+else:
     # Display statistics and line chart
     st.header('Stats')
     st.metric(label="Number of Arrests", value=len(filtered_df))
@@ -98,7 +99,7 @@ for city in selected_cities:
             pdk.Layer(
                 'HexagonLayer',
                 data=filtered_df,
-                get_position='[lon, lat]',
+                get_position=["lon", "lat"],  # Ensure these names match your DataFrame's column names
                 radius=100,
                 elevation_scale=3,
                 elevation_range=[0, 1000],
@@ -108,10 +109,9 @@ for city in selected_cities:
             pdk.Layer(
                 'ScatterplotLayer',
                 data=filtered_df,
-                get_position='[lon, lat]',
-                get_color='[200, 30, 0, 160]',
+                get_position=["lon", "lat"],  # Ensure these names match your DataFrame's column names
+                get_color=[200, 30, 0, 160],
                 get_radius=100,
             ),
         ],
     ))
-# Comment out the function calls when finished.
